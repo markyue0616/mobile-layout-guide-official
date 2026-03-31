@@ -1,8 +1,7 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/public/index.html" },
-    { "source": "/uiux", "destination": "/public/web-components-playground.html" },
-    { "source": "/uiux/", "destination": "/public/web-components-playground.html" },
-    { "source": "/(.*)", "destination": "/public/index.html" }
+    { "source": "/uiux", "destination": "/web-components-playground.html" },
+    { "source": "/uiux/", "destination": "/web-components-playground.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
