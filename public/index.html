@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>移动端 Layout 最佳实践</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1714;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --warm-mid: #c8bfaa;
+    --accent-red: #c0392b;
+    --accent-green: #2a7a4b;
+    --accent-amber: #d4860a;
+    --accent-blue: #2471a3;
+    --rule: #ccc4b0;
+    --mono: 'DM Mono', monospace;
+    --serif: 'DM Serif Display', serif;
+    --sans: 'DM Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.6; min-height: 100vh; }
+
+  /* HEADER */
+  .site-header { background: var(--ink); color: var(--paper); padding: 32px 40px 28px; position: relative; overflow: hidden; }
+  .site-header::before { content:''; position:absolute; top:-60px; right:-60px; width:280px; height:280px; border-radius:50%; background:rgba(255,255,255,0.04); }
+  .header-label { font-family:var(--mono); font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--warm-mid); margin-bottom:10px; }
+  .site-header h1 { font-family:var(--serif); font-size:clamp(2rem,5vw,3.2rem); line-height:1.1; font-weight:400; max-width:640px; }
+  .site-header h1 em { font-style:italic; color:var(--warm-mid); }
+  .header-sub { margin-top:16px; font-size:0.95rem; color:var(--warm-mid); font-weight:300; max-width:520px; }
+  .header-count { margin-top:10px; font-family:var(--mono); font-size:0.7rem; color:#555; letter-spacing:0.08em; }
+
+  /* NAV */
+  .nav-tabs { background:var(--cream); border-bottom:1px solid var(--rule); display:flex; overflow-x:auto; scrollbar-width:none; position:sticky; top:0; z-index:100; }
+  .nav-tabs::-webkit-scrollbar { display:none; }
+  .nav-tab { flex-shrink:0; padding:14px 20px; font-family:var(--mono); font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; border:none; background:none; cursor:pointer; color:var(--warm-mid); border-bottom:2px solid transparent; transition:all 0.2s; white-space:nowrap; }
+  .nav-tab.active { color:var(--ink); border-bottom-color:var(--ink); }
+  .nav-tab:hover:not(.active) { color:var(--ink); background:rgba(0,0,0,0.04); }
+
+  /* LAYOUT */
+  .main-content { max-width:1100px; margin:0 auto; padding:0 24px 80px; }
+  .section-panel { display:none; }
+  .section-panel.active { display:block; }
+
+  /* CHAPTER */
+  .chapter-heading { padding:48px 0 32px; border-bottom:1px solid var(--rule); margin-bottom:48px; }
+  .chapter-num { font-family:var(--mono); font-size:0.7rem; color:var(--warm-mid); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:8px; }
+  .chapter-heading h2 { font-family:var(--serif); font-size:clamp(1.8rem,4vw,2.6rem); font-weight:400; line-height:1.15; }
+  .chapter-intro { margin-top:16px; font-size:1rem; color:#555; max-width:560px; line-height:1.7; }
+
+  /* RULE GRID */
+  .rule-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:2px; background:var(--rule); border:1px solid var(--rule); margin-bottom:48px; }
+  .rule-card { background:var(--paper); padding:28px 28px 24px; }
+  .rule-card-header { display:flex; align-items:baseline; gap:12px; margin-bottom:12px; }
+  .rule-num { font-family:var(--mono); font-size:0.65rem; color:var(--warm-mid); letter-spacing:0.1em; flex-shrink:0; }
+  .rule-card h3 { font-family:var(--sans); font-size:0.95rem; font-weight:500; letter-spacing:-0.01em; }
+  .rule-value { font-family:var(--mono); font-size:1.4rem; font-weight:500; color:var(--ink); margin-bottom:6px; letter-spacing:-0.02em; }
+  .rule-value.danger { color:var(--accent-red); }
+  .rule-value.ok { color:var(--accent-green); }
+  .rule-value.info { color:var(--accent-blue); font-size:1rem; }
+  .rule-desc { font-size:0.85rem; color:#666; line-height:1.55; }
+  .rule-tag { display:inline-block; margin-top:10px; padding:3px 8px; border-radius:2px; font-family:var(--mono); font-size:0.65rem; letter-spacing:0.06em; text-transform:uppercase; }
+  .rule-tag.critical { background:#fce8e6; color:var(--accent-red); }
+  .rule-tag.recommended { background:#e6f4ed; color:var(--accent-green); }
+  .rule-tag.note { background:#fef3e1; color:var(--accent-amber); }
+  .rule-tag.info { background:#e8f4fd; color:var(--accent-blue); }
+
+  /* PHONE MOCKUP */
+  .comparison-row { display:grid; grid-template-columns:1fr 1fr; gap:40px; margin-bottom:56px; align-items:start; }
+  @media (max-width:640px) { .comparison-row { grid-template-columns:1fr; } }
+  .comparison-col h4 { font-family:var(--mono); font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .comparison-col h4.bad { color:var(--accent-red); }
+  .comparison-col h4.good { color:var(--accent-green); }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  .dot.bad { background:var(--accent-red); }
+  .dot.good { background:var(--accent-green); }
+  .phone-frame { width:100%; max-width:280px; margin:0 auto; background:#1a1714; border-radius:32px; padding:14px; box-shadow:0 20px 60px rgba(0,0,0,0.25),0 0 0 1px rgba(255,255,255,0.08); position:relative; }
+  .phone-screen { background:#fff; border-radius:22px; overflow:hidden; font-size:10px; line-height:1.4; position:relative; }
+  .phone-notch { height:20px; background:#1a1714; border-radius:0 0 10px 10px; width:80px; margin:0 auto; position:relative; z-index:2; }
+  .comparison-note { margin-top:12px; font-size:0.8rem; color:#666; line-height:1.55; padding:0 4px; }
+  .comparison-note strong { display:block; font-size:0.78rem; font-family:var(--mono); margin-bottom:3px; }
+  .comparison-note.bad strong { color:var(--accent-red); }
+  .comparison-note.good strong { color:var(--accent-green); }
+
+  /* CALLOUT */
+  .callout { padding:14px 18px; border-radius:4px; margin-bottom:24px; font-size:0.85rem; line-height:1.6; display:flex; gap:10px; align-items:flex-start; }
+  .callout.warn { background:#fef3e1; border-left:3px solid var(--accent-amber); }
+  .callout.info { background:#e8f4fd; border-left:3px solid var(--accent-blue); }
+  .callout.danger { background:#fce8e6; border-left:3px solid var(--accent-red); }
+  .callout-icon { font-size:1rem; flex-shrink:0; margin-top:1px; }
+
+  /* SPACING RULER */
+  .spacing-demo { background:var(--cream); border:1px solid var(--rule); border-radius:4px; padding:32px; margin-bottom:48px; position:relative; overflow:hidden; }
+  .spacing-demo::before { content:'SPACING SCALE'; position:absolute; top:12px; right:16px; font-family:var(--mono); font-size:0.62rem; letter-spacing:0.12em; color:var(--warm-mid); }
+  .spacing-row { display:flex; align-items:center; gap:16px; margin-bottom:14px; }
+  .spacing-label { font-family:var(--mono); font-size:0.7rem; width:100px; flex-shrink:0; color:#666; }
+  .spacing-bar-wrap { flex:1; height:12px; background:var(--paper); border:1px solid var(--rule); border-radius:2px; overflow:hidden; }
+  .spacing-bar { height:100%; background:var(--ink); border-radius:1px; }
+  .spacing-val { font-family:var(--mono); font-size:0.7rem; color:var(--ink); width:60px; text-align:right; flex-shrink:0; }
+  .spacing-note-text { font-size:0.72rem; color:var(--warm-mid); flex-shrink:0; width:180px; }
+
+  /* TYPE SCALE */
+  .type-scale { margin-bottom:48px; }
+  .type-row { display:grid; grid-template-columns:120px 1fr 130px; align-items:baseline; padding:12px 0; border-bottom:1px solid var(--rule); gap:16px; }
+  .type-meta { font-family:var(--mono); font-size:0.68rem; color:var(--warm-mid); align-self:center; }
+  .type-sample { color:var(--ink); }
+  .type-use { font-size:0.72rem; color:#888; text-align:right; align-self:center; }
+  .type-row.danger-row { background:#fdf4f3; padding-left:12px; padding-right:12px; border-radius:2px; }
+  .type-row.danger-row .type-meta { color:var(--accent-red); }
+
+  /* BREAKPOINT */
+  .breakpoint-vis { margin-bottom:48px; overflow-x:auto; }
+  .bp-track { min-width:600px; height:60px; background:var(--cream); border:1px solid var(--rule); border-radius:4px; position:relative; margin-bottom:12px; }
+  .bp-zone { position:absolute; top:0; bottom:0; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:0.65rem; letter-spacing:0.05em; color:white; border-right:2px solid white; overflow:hidden; text-align:center; }
+  .bp-zone:last-child { border-right:none; }
+  .bp-zone.mobile { background:#c0392b; left:0; width:20%; }
+  .bp-zone.tablet { background:#d4860a; left:20%; width:22%; }
+  .bp-zone.desktop { background:#2a7a4b; left:42%; width:20%; }
+  .bp-zone.wide { background:#1a1714; left:62%; right:0; }
+  .bp-label { display:flex; min-width:600px; font-family:var(--mono); font-size:0.65rem; color:#888; }
+  .bp-label span { flex:1; text-align:center; }
+  .bp-note { margin-top:16px; padding:14px 16px; background:#fef3e1; border-left:3px solid var(--accent-amber); border-radius:0 4px 4px 0; font-size:0.82rem; color:var(--ink); line-height:1.6; }
+  .bp-note strong { font-family:var(--mono); font-size:0.75rem; display:block; margin-bottom:4px; color:var(--accent-amber); letter-spacing:0.06em; text-transform:uppercase; }
+
+  /* CHECKLIST */
+  .checklist { margin-bottom:48px; }
+  .checklist-group-title { font-family:var(--mono); font-size:0.68rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--warm-mid); padding:20px 0 8px; border-bottom:2px solid var(--ink); margin-bottom:0; }
+  .checklist-item { display:flex; align-items:flex-start; gap:16px; padding:14px 0; border-bottom:1px solid var(--rule); cursor:pointer; transition:background 0.1s; }
+  .checklist-item:hover { background:rgba(0,0,0,0.02); }
+  .checklist-item:last-child { border-bottom:none; }
+  .check-box { width:20px; height:20px; border:1.5px solid var(--warm-mid); border-radius:3px; flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; background:white; }
+  .checklist-item.checked .check-box { background:var(--ink); border-color:var(--ink); }
+  .checklist-item.checked .check-box::after { content:'✓'; color:white; font-size:11px; line-height:1; }
+  .check-title { font-size:0.92rem; font-weight:500; margin-bottom:2px; }
+  .check-desc { font-size:0.8rem; color:#777; line-height:1.5; }
+  .check-tag { margin-left:auto; flex-shrink:0; font-family:var(--mono); font-size:0.62rem; letter-spacing:0.06em; padding:3px 7px; border-radius:2px; text-transform:uppercase; align-self:center; }
+  .check-tag.a { background:#fce8e6; color:var(--accent-red); }
+  .check-tag.b { background:#fef3e1; color:var(--accent-amber); }
+  .check-tag.c { background:#e6f4ed; color:var(--accent-green); }
+
+  /* PROGRESS */
+  .progress-bar-wrap { background:var(--cream); border:1px solid var(--rule); border-radius:4px; padding:20px 24px; margin-bottom:40px; display:flex; align-items:center; gap:20px; }
+  .progress-label { font-family:var(--mono); font-size:0.7rem; color:#888; white-space:nowrap; }
+  .progress-track { flex:1; height:6px; background:var(--rule); border-radius:3px; overflow:hidden; }
+  .progress-fill { height:100%; background:var(--ink); border-radius:3px; transition:width 0.4s ease; width:0%; }
+  .progress-count { font-family:var(--mono); font-size:0.8rem; font-weight:500; white-space:nowrap; }
+
+  /* REVEAL */
+  .reveal { opacity:0; transform:translateY(16px); transition:opacity 0.5s ease,transform 0.5s ease; }
+  .reveal.visible { opacity:1; transform:none; }
+
+  /* LANG TABLE */
+  .lang-table { width:100%; border-collapse:collapse; margin-bottom:40px; font-size:0.85rem; }
+  .lang-table th { background:var(--ink); color:var(--paper); padding:10px 14px; text-align:left; font-family:var(--mono); font-size:0.68rem; letter-spacing:0.08em; font-weight:400; }
+  .lang-table td { padding:10px 14px; border-bottom:1px solid var(--rule); vertical-align:top; line-height:1.5; }
+  .lang-table tr:nth-child(even) td { background:var(--cream); }
+  .lang-tag { display:inline-block; padding:2px 7px; border-radius:2px; font-family:var(--mono); font-size:0.62rem; letter-spacing:0.05em; margin-right:4px; }
+  .lang-tag.ja { background:#e8f4fd; color:var(--accent-blue); }
+  .lang-tag.de { background:#fce8e6; color:var(--accent-red); }
+  .lang-tag.es { background:#e6f4ed; color:var(--accent-green); }
+  .lang-tag.all { background:#f0ebe0; color:#666; }
+
+  /* PERF METER */
+  .perf-meter { background:var(--cream); border:1px solid var(--rule); border-radius:4px; padding:28px; margin-bottom:40px; }
+  .perf-row { display:flex; align-items:center; gap:16px; margin-bottom:16px; }
+  .perf-row:last-child { margin-bottom:0; }
+  .perf-label { font-family:var(--mono); font-size:0.7rem; width:90px; flex-shrink:0; }
+  .perf-track { flex:1; height:20px; background:#e8e3d8; border-radius:3px; overflow:hidden; position:relative; display:flex; }
+  .perf-seg { height:100%; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:0.6rem; color:white; letter-spacing:0.04em; }
+  .perf-seg.good { background:var(--accent-green); }
+  .perf-seg.warn { background:var(--accent-amber); }
+  .perf-seg.bad { background:var(--accent-red); }
+  .perf-val { font-family:var(--mono); font-size:0.7rem; width:80px; text-align:right; flex-shrink:0; color:#888; }
+
+  /* KEYBOARD DEMOS */
+  .keyboard-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:40px; }
+  .keyboard-demo { background:var(--cream); border:1px solid var(--rule); border-radius:4px; padding:16px; text-align:center; }
+  .keyboard-demo .kbd-label { font-family:var(--mono); font-size:0.65rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--warm-mid); margin-bottom:10px; }
+  .keyboard-demo .kbd-type { font-family:var(--mono); font-size:0.8rem; color:var(--accent-blue); margin-bottom:10px; }
+  .keyboard-demo .kbd-img { background:#1a1714; border-radius:6px; padding:8px; display:grid; gap:3px; }
+  .kbd-row { display:flex; gap:3px; justify-content:center; }
+  .kbd-key { background:#2d2d2d; border-radius:3px; color:#ddd; font-size:0.55rem; padding:3px 5px; min-width:18px; text-align:center; font-family:var(--mono); }
+  .kbd-key.accent { background:#4a90d9; color:white; }
+  .kbd-key.wide { min-width:36px; }
+  .kbd-key.special { background:#555; font-size:0.5rem; min-width:28px; }
+
+  /* FOOTER */
+  .site-footer { background:var(--cream); border-top:1px solid var(--rule); padding:24px 40px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .footer-label { font-family:var(--mono); font-size:0.7rem; color:var(--warm-mid); letter-spacing:0.08em; }
+  .footer-sources { font-size:0.75rem; color:#999; }
+
+  /* PHONE CONTENT DEMOS */
+  /* Touch targets */
+  .demo-bad-touch .s-header { background:#4a90d9; padding:8px; color:white; font-size:9px; font-weight:bold; }
+  .demo-bad-touch .s-nav { display:flex; background:#f0f0f0; border-bottom:1px solid #ddd; }
+  .demo-bad-touch .s-nav a { padding:4px 6px; font-size:7px; color:#333; text-decoration:none; border-right:1px solid #ddd; }
+  .demo-bad-touch .s-content { padding:6px; }
+  .demo-bad-touch .s-btn { background:#4a90d9; color:white; padding:3px 8px; border-radius:2px; font-size:7px; display:inline-block; margin:2px 0; }
+  .demo-bad-touch .s-text { font-size:7px; color:#555; margin:4px 0; line-height:1.3; }
+  .demo-good-touch .s-header { background:#1a1714; padding:14px 12px; color:white; font-size:10px; font-weight:bold; letter-spacing:0.05em; }
+  .demo-good-touch .s-nav { display:flex; background:#f7f5f0; border-bottom:1px solid #e8e4da; }
+  .demo-good-touch .s-nav a { padding:10px 8px; font-size:8px; color:#333; text-decoration:none; border-right:1px solid #e8e4da; display:flex; align-items:center; min-height:36px; }
+  .demo-good-touch .s-content { padding:12px; }
+  .demo-good-touch .s-btn { background:#1a1714; color:white; padding:9px 16px; border-radius:4px; font-size:8px; display:flex; align-items:center; justify-content:center; margin:6px 0; min-height:36px; }
+  .demo-good-touch .s-text { font-size:9px; color:#444; margin:5px 0; line-height:1.6; }
+  /* Margin */
+  .demo-bad-margin .s-content { padding:0px 2px; }
+  .demo-bad-margin .s-title { font-size:12px; font-weight:bold; margin:6px 0 3px; line-height:1.2; }
+  .demo-bad-margin .s-text { font-size:8px; color:#555; margin-bottom:4px; line-height:1.3; }
+  .demo-bad-margin .s-img { background:linear-gradient(135deg,#ddd 0%,#bbb 100%); height:70px; display:flex; align-items:center; justify-content:center; color:#999; font-size:8px; }
+  .demo-good-margin .s-content { padding:14px 16px; }
+  .demo-good-margin .s-title { font-size:12px; font-weight:bold; margin:0 0 6px; line-height:1.25; }
+  .demo-good-margin .s-text { font-size:9px; color:#555; margin-bottom:8px; line-height:1.6; }
+  .demo-good-margin .s-img { background:linear-gradient(135deg,#e8e4da 0%,#c8bfaa 100%); height:70px; margin:0 -16px 10px; display:flex; align-items:center; justify-content:center; color:#888; font-size:8px; }
+  /* Font */
+  .demo-bad-font .s-content { padding:8px 10px; }
+  .demo-bad-font .s-title { font-size:10px; font-weight:bold; margin-bottom:4px; }
+  .demo-bad-font .s-label { font-size:6px; color:#999; margin-bottom:1px; }
+  .demo-bad-font .s-input { border:1px solid #ccc; width:100%; padding:3px 4px; font-size:8px; border-radius:2px; background:white; margin-bottom:5px; display:block; }
+  .demo-bad-font .s-note { font-size:6px; color:#aaa; font-style:italic; line-height:1.3; margin-top:3px; }
+  .demo-bad-font .s-body { font-size:7px; color:#555; line-height:1.3; }
+  .demo-good-font .s-content { padding:10px 12px; }
+  .demo-good-font .s-title { font-size:11px; font-weight:bold; margin-bottom:7px; }
+  .demo-good-font .s-label { font-size:7.5px; color:#666; margin-bottom:3px; font-weight:500; }
+  .demo-good-font .s-input { border:1.5px solid #ccc; width:100%; padding:7px 8px; font-size:10px; border-radius:4px; background:white; margin-bottom:7px; display:block; color:#333; }
+  .demo-good-font .s-note { font-size:7px; color:#888; line-height:1.5; margin-top:4px; }
+  .demo-good-font .s-body { font-size:8px; color:#444; line-height:1.6; }
+  /* Contrast */
+  .demo-bad-contrast .s-header { background:#87CEEB; padding:10px 12px; color:#a8d8ea; font-size:10px; font-weight:bold; }
+  .demo-bad-contrast .s-content { padding:10px 12px; }
+  .demo-bad-contrast .s-title { font-size:11px; color:#ccc; font-weight:bold; margin-bottom:5px; }
+  .demo-bad-contrast .s-text { font-size:8px; color:#bbb; line-height:1.5; margin-bottom:6px; }
+  .demo-bad-contrast .s-btn { background:#d4e8f0; color:#a8d8ea; padding:7px 12px; border-radius:4px; font-size:8px; display:inline-block; }
+  .demo-good-contrast .s-header { background:#1a1714; padding:10px 12px; color:#f5f0e8; font-size:10px; font-weight:bold; letter-spacing:0.04em; }
+  .demo-good-contrast .s-content { padding:10px 12px; }
+  .demo-good-contrast .s-title { font-size:11px; color:#1a1714; font-weight:bold; margin-bottom:5px; }
+  .demo-good-contrast .s-text { font-size:8px; color:#444; line-height:1.6; margin-bottom:6px; }
+  .demo-good-contrast .s-btn { background:#1a1714; color:white; padding:7px 12px; border-radius:4px; font-size:8px; display:inline-block; }
+  /* Form label */
+  .demo-bad-form .s-content { padding:10px 12px; }
+  .demo-bad-form .s-title { font-size:11px; font-weight:bold; margin-bottom:8px; }
+  .demo-bad-form .s-input { border:1px solid #ddd; width:100%; padding:5px 8px; font-size:8px; border-radius:3px; background:white; margin-bottom:8px; display:block; color:#aaa; }
+  .demo-bad-form .s-note { font-size:6.5px; color:var(--accent-red); margin-bottom:6px; }
+  .demo-bad-form .s-btn { background:#4a90d9; color:white; padding:6px; width:100%; border-radius:3px; font-size:8px; text-align:center; }
+  .demo-good-form .s-content { padding:10px 12px; }
+  .demo-good-form .s-title { font-size:11px; font-weight:bold; margin-bottom:8px; }
+  .demo-good-form .s-label { font-size:7.5px; color:#555; font-weight:500; margin-bottom:3px; display:block; }
+  .demo-good-form .s-input { border:1.5px solid #ccc; width:100%; padding:7px 8px; font-size:9.5px; border-radius:3px; background:white; margin-bottom:8px; display:block; color:#333; }
+  .demo-good-form .s-note { font-size:6.5px; color:#888; margin-bottom:6px; }
+  .demo-good-form .s-btn { background:#1a1714; color:white; padding:8px; width:100%; border-radius:3px; font-size:8px; text-align:center; }
+  /* i18n demos */
+  .demo-bad-i18n .s-content { padding:10px 12px; }
+  .demo-bad-i18n .s-btn-wrap { display:flex; gap:4px; margin-bottom:8px; }
+  .demo-bad-i18n .s-btn { background:#4a90d9; color:white; padding:5px 8px; border-radius:3px; font-size:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:90px; }
+  .demo-bad-i18n .s-text { font-size:8px; color:#555; margin-bottom:5px; line-height:1.3; }
+  .demo-bad-i18n .s-overflow { font-size:7px; color:var(--accent-red); }
+  .demo-good-i18n .s-content { padding:10px 12px; }
+  .demo-good-i18n .s-btn-wrap { display:flex; gap:4px; margin-bottom:8px; flex-wrap:wrap; }
+  .demo-good-i18n .s-btn { background:#1a1714; color:white; padding:7px 10px; border-radius:3px; font-size:7px; white-space:nowrap; min-width:0; }
+  .demo-good-i18n .s-text { font-size:8px; color:#444; margin-bottom:5px; line-height:1.55; }
+  .demo-good-i18n .s-note { font-size:6.5px; color:var(--accent-green); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-label">移动端设计规范 · Field Reference</div>
+  <h1>Layout<br><em>Best Practices</em></h1>
+  <p class="header-sub">面向非技术团队的移动端网页规范手册 — 含行业标准、对比 mockup、多语种规范与上线 Checklist</p>
+  <p class="header-count">11 个章节 · 30+ 条规范 · 26 条上线检查项</p>
+</header>
+
+<nav class="nav-tabs">
+  <button class="nav-tab active" data-tab="touch">01 触控目标</button>
+  <button class="nav-tab" data-tab="typography">02 字体排版</button>
+  <button class="nav-tab" data-tab="spacing">03 间距边距</button>
+  <button class="nav-tab" data-tab="contrast">04 颜色对比</button>
+  <button class="nav-tab" data-tab="breakpoints">05 响应式断点</button>
+  <button class="nav-tab" data-tab="interaction">06 交互细节</button>
+  <button class="nav-tab" data-tab="performance">07 性能</button>
+  <button class="nav-tab" data-tab="forms">08 表单输入</button>
+  <button class="nav-tab" data-tab="i18n">09 多语种</button>
+  <button class="nav-tab" data-tab="a11y">10 无障碍</button>
+  <button class="nav-tab" data-tab="checklist">✓ 上线 Checklist</button>
+</nav>
+
+<main class="main-content">
+
+<!-- ══════════════════════════════════
+     TAB 1: TOUCH TARGETS
+══════════════════════════════════ -->
+<div class="section-panel active" id="tab-touch">
+  <div class="chapter-heading reveal">
+    <div class="chapter-num">01 — Touch Targets</div>
+    <h2>触控目标尺寸</h2>
+    <p class="chapter-intro">手指不是鼠标光标。移动端可点击区域太小是最高频的 UX 失误，直接导致用户误触和放弃操作。</p>
+  </div>
+  <div class="rule-grid reveal">
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">APPLE HIG</span><h3>最小触控区域</h3></div>
+      <div class="rule-value ok">44 × 44px</div>
+      <p class="rule-desc">视觉上按钮可以更小，但可点击区域必须至少 44px 高、44px 宽。用 CSS <code>padding</code> 扩展点击区域，而不是把视觉按钮做大。</p>
+      <span class="rule-tag critical">Critical</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">MATERIAL 3</span><h3>最小触控区域</h3></div>
+      <div class="rule-value ok">48 × 48dp</div>
+      <p class="rule-desc">Google 的标准略大于 Apple。两个标准都认同：与相邻可点击元素间距至少 8px，防止用户点错目标。</p>
+      <span class="rule-tag critical">Critical</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">COMMON FAIL</span><h3>最高频违规场景</h3></div>
+      <div class="rule-value danger">导航链接、图标按钮</div>
+      <p class="rule-desc">汉堡菜单关闭按钮、面包屑链接、购物车图标、社交分享按钮 — 这四类是触控区域最常不达标的地方。</p>
+      <span class="rule-tag note">Watch Out</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">SPACING</span><h3>相邻元素最小间距</h3></div>
+      <div class="rule-value ok">≥ 8px</div>
+      <p class="rule-desc">相邻两个可点击目标之间，物理间距至少 8px。最常出问题：数量加减按钮、轮播点点导航、价格旁边的操作按钮。</p>
+      <span class="rule-tag critical">Critical</span>
+    </div>
+  </div>
+  <div class="reveal" style="margin-bottom:32px">
+    <h3 style="font-family:var(--mono);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--warm-mid);margin-bottom:24px;">对比 Mockup</h3>
+    <div class="comparison-row">
+      <div class="comparison-col">
+        <h4 class="bad"><span class="dot bad"></span>Bad — 触控区太小</h4>
+        <div class="phone-frame"><div class="phone-notch"></div>
+          <div class="phone-screen demo-bad-touch">
+            <div class="s-header">FLOWTICA SCRIBE</div>
+            <div class="s-nav"><a href="#">Home</a><a href="#">Product</a><a href="#">Review</a><a href="#">Buy</a></div>
+            <div class="s-content">
+              <div class="s-text">The AI recording pen designed for professionals.</div>
+              <div class="s-btn">Buy Now</div>
+              <div class="s-btn" style="background:#888;margin-top:3px">Learn More</div>
+              <div class="s-text" style="margin-top:6px;font-size:6px;color:var(--accent-red)">Nav links ~18px tall — impossible to tap accurately</div>
+            </div>
+          </div>
+        </div>
+        <div class="comparison-note bad"><strong>× 问题</strong>导航链接约 18px 高，按钮 padding 不足，误触率极高。</div>
+      </div>
+      <div class="comparison-col">
+        <h4 class="good"><span class="dot good"></span>Good — 足够的触控区域</h4>
+        <div class="phone-frame"><div class="phone-notch"></div>
+          <div class="phone-screen demo-good-touch">
+            <div class="s-header">FLOWTICA SCRIBE</div>
+            <div class="s-nav"><a href="#">Home</a><a href="#">Product</a><a href="#">Buy</a></div>
+            <div class="s-content">
+              <div class="s-text">The AI recording pen designed for professionals.</div>
+              <div class="s-btn">Buy Now</div>
+              <div class="s-btn" style="background:#555;margin-top:6px">Learn More</div>
+            </div>
+          </div>
+        </div>
+        <div class="comparison-note good"><strong>✓ 正确</strong>每个可点击元素高度 ≥ 36px，按钮 block 宽，导航有足够间隔。</div>
+      </div>
+    </div>
+  </div>
+  <div class="callout warn reveal">
+    <span class="callout-icon">⚠</span>
+    <div><strong style="display:block;margin-bottom:4px">Flowtica 主题需注意</strong>Hero 区域 CTA 按钮目前高度约 34px。建议移动端将 <code>height</code> 提升至 44px，<code>padding</code> 增加到 12px 上下。</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 2: TYPOGRAPHY
+══════════════════════════════════ -->
+<div class="section-panel" id="tab-typography">
+  <div class="chapter-heading reveal">
+    <div class="chapter-num">02 — Typography</div>
+    <h2>字体排版规范</h2>
+    <p class="chapter-intro">字体大小不只是美观问题 — 16px 是浏览器的「自动缩放临界值」，低于它会触发 iOS Safari 的自动放大行为。</p>
+  </div>
+  <div class="callout warn reveal">
+    <span class="callout-icon">⚠</span>
+    <div><strong style="display:block;margin-bottom:4px">iOS Safari 自动缩放陷阱</strong>表单 <code>&lt;input&gt;</code> 的 <code>font-size</code> 低于 <strong>16px</strong>，用户点击输入框时 iOS 会自动放大整个页面。解决方案：所有输入框字体 ≥ 16px。</div>
+  </div>
+  <div class="callout warn reveal">
+    <span class="callout-icon">⚠</span>
+    <div><strong style="display:block;margin-bottom:4px">全大写长文本陷阱</strong><code>text-transform: uppercase</code> 用于短标签（「NEW」「SALE」）没问题，但整段说明文字用全大写会大幅降低阅读速度。移动端阅读条件本就不好，全大写段落几乎无法快速浏览。</div>
+  </div>
+  <div class="type-scale reveal">
+    <div class="type-row">
+      <span class="type-meta">H1 主标题</span>
+      <span class="type-sample" style="font-size:clamp(1.6rem,6vw,2.2rem);font-family:var(--serif);line-height:1.1;">Write the Unspoken</span>
+      <span class="type-use">28–36px · clamp</span>
+    </div>
+    <div class="type-row">
+      <span class="type-meta">H2 区块标题</span>
+      <span class="type-sample" style="font-size:1.4rem;font-weight:600;line-height:1.2;">Features Overview</span>
+      <span class="type-use">22–24px</span>
+    </div>
+    <div class="type-row">
+      <span class="type-meta">H3 子标题</span>
+      <span class="type-sample" style="font-size:1.15rem;font-weight:500;">MEMS Microphone Array</span>
+      <span class="type-use">18–20px</span>
+    </div>
+    <div class="type-row">
+      <span class="type-meta">正文 Body</span>
+      <span class="type-sample" style="font-size:1rem;line-height:1.6;color:#444;">Capture every conversation with studio-grade clarity and AI-powered transcription.</span>
+      <span class="type-use">16px ← 基准</span>
+    </div>
+    <div class="type-row">
+      <span class="type-meta">辅助文字</span>
+      <span class="type-sample" style="font-size:0.875rem;color:#777;line-height:1.5;">*Price includes free 1-year cloud storage</span>
+      <span class="type-use">14px（最小）</span>
+    </div>
+    <div class="type-row danger-row">
+      <span class="type-meta">❌ 太小</span>
+      <span class="type-sample" style="font-size:0.75rem;color:#999;">Footnote disclaimer text</span>
+      <span class="type-use" style="color:var(--accent-red);">12px — 避免正文使用</span>
+    </div>
+    <div class="type-row danger-row">
+      <span class="type-meta">❌ Input 陷阱</span>
+      <span class="type-sample" style="font-size:0.85rem;border:1px solid #ccc;padding:4px 8px;border-radius:3px;background:white;">输入邮箱…</span>
+      <span class="type-use" style="color:var(--accent-red);">14px input → iOS 放大</span>
+    </div>
+  </div>
+  <div class="comparison-row reveal">
+    <div class="comparison-col">
+      <h4 class="bad"><span class="dot bad"></span>Bad — 行高太窄 / 字号层级混乱</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="padding:12px;font-family:sans-serif;">
+          <div style="font-size:11px;font-weight:bold;line-height:1.1;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">CAPTURE EVERY WORD WITH AI PRECISION AND STUDIO GRADE CLARITY</div>
+          <div style="font-size:7px;color:#555;line-height:1.2;margin-bottom:8px;">The Flowtica Scribe records, transcribes, and identifies speakers automatically so you never miss a critical detail in meetings, lectures, or creative sessions.</div>
+          <div style="font-size:6px;color:#999;line-height:1.2;margin-bottom:8px;">Available in Midnight Black and Pearl White. Ships with USB-C cable, carrying case, and one year of cloud storage.</div>
+          <div style="background:#4a90d9;color:white;padding:3px 8px;font-size:7px;display:inline-block;border-radius:2px;">ORDER NOW</div>
+          <div style="font-size:6px;color:var(--accent-red);margin-top:6px;">← Title all-caps, line-height 1.1 — dense and hard to scan. Body 7px, line-height 1.2 — fatiguing to read.</div>
+        </div>
+      </div>
+      <div class="comparison-note bad"><strong>× 问题</strong>全大写标题在移动端几乎无法快速阅读。正文 7px + 行高 1.2，文字挤成一团，用户放弃阅读的概率极高。</div>
+    </div>
+    <div class="comparison-col">
+      <h4 class="good"><span class="dot good"></span>Good — 正确字号层级 + 舒适行高</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="padding:12px;font-family:sans-serif;">
+          <div style="font-size:12px;font-weight:700;line-height:1.25;margin-bottom:6px;color:#1a1714;">Capture Every Word with AI Precision</div>
+          <div style="font-size:8.5px;color:#444;line-height:1.65;margin-bottom:10px;">The Flowtica Scribe records, transcribes, and identifies speakers automatically — so you never miss a critical detail.</div>
+          <div style="font-size:7.5px;color:#888;line-height:1.6;margin-bottom:10px;">Available in Midnight Black and Pearl White. Ships with USB-C cable and one year of cloud storage.</div>
+          <div style="background:#1a1714;color:white;padding:7px 14px;font-size:8px;display:inline-block;border-radius:3px;">Order Now</div>
+          <div style="font-size:6.5px;color:var(--accent-green);margin-top:6px;">✓ Mixed case, clear hierarchy. Body line-height 1.65 — easy to read at a glance.</div>
+        </div>
+      </div>
+      <div class="comparison-note good"><strong>✓ 正确</strong>标题正常大小写，三级层级清晰（标题 → 正文 → 辅助说明）。行高 1.65 让段落有足够呼吸感，用户能快速扫读。</div>
+    </div>
+  </div>
+
+  <div class="comparison-row reveal">
+    <div class="comparison-col">
+      <h4 class="bad"><span class="dot bad"></span>Bad — 极细字重在安卓低端机</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="padding:14px 12px;font-family:sans-serif;background:#fafafa;">
+          <div style="font-size:11px;font-weight:100;color:#1a1714;margin-bottom:6px;letter-spacing:0.1em;">FLOWTICA SCRIBE</div>
+          <div style="font-size:9px;font-weight:100;color:#555;line-height:1.6;margin-bottom:8px;">The world's most intelligent recording device. Designed for professionals.</div>
+          <div style="font-size:7.5px;font-weight:100;color:#aaa;line-height:1.5;margin-bottom:10px;">Starting from $299 · Free shipping worldwide</div>
+          <div style="border:1px solid #ccc;color:#999;padding:6px 12px;font-size:7.5px;font-weight:100;display:inline-block;border-radius:2px;letter-spacing:0.08em;">LEARN MORE</div>
+          <div style="font-size:6px;color:var(--accent-red);margin-top:8px;">← font-weight: 100. On low-PPI Android: blurry hairlines, nearly invisible.</div>
+        </div>
+      </div>
+      <div class="comparison-note bad"><strong>× 问题</strong>font-weight: 100 在 Retina 屏好看，但在低 PPI 安卓机（大量中低端机型）渲染成模糊细线，正文接近不可读。</div>
+    </div>
+    <div class="comparison-col">
+      <h4 class="good"><span class="dot good"></span>Good — 安全字重范围</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="padding:14px 12px;font-family:sans-serif;background:#fafafa;">
+          <div style="font-size:11px;font-weight:600;color:#1a1714;margin-bottom:6px;letter-spacing:0.04em;">Flowtica Scribe</div>
+          <div style="font-size:9px;font-weight:400;color:#444;line-height:1.6;margin-bottom:8px;">The world's most intelligent recording device. Designed for professionals.</div>
+          <div style="font-size:7.5px;font-weight:300;color:#777;line-height:1.5;margin-bottom:10px;">Starting from $299 · Free shipping worldwide</div>
+          <div style="background:#1a1714;color:white;padding:7px 14px;font-size:7.5px;font-weight:500;display:inline-block;border-radius:3px;letter-spacing:0.04em;">Learn More</div>
+          <div style="font-size:6px;color:var(--accent-green);margin-top:8px;">✓ 600 / 400 / 300 — safe range. Clear on all devices.</div>
+        </div>
+      </div>
+      <div class="comparison-note good"><strong>✓ 正确</strong>标题 600，正文 400，辅助说明 300。300 是安全下限，在所有主流设备上清晰可读，视觉层级也依然丰富。</div>
+    </div>
+  </div>
+
+  <div class="rule-grid reveal">
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">LINE HEIGHT</span><h3>行高建议</h3></div>
+      <div class="rule-value ok">1.5 – 1.7</div>
+      <p class="rule-desc">正文行高 1.5 是最低安全值，建议 1.6–1.7。标题可收窄到 1.1–1.2，段落绝对不能低于 1.4。</p>
+      <span class="rule-tag recommended">Recommended</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">FONT WEIGHT</span><h3>轻字重的风险</h3></div>
+      <div class="rule-value danger">慎用 weight &lt; 300</div>
+      <p class="rule-desc">Ultra Light / Thin 字重在低 PPI 安卓机上会变成模糊细线，几乎不可读。font-weight: 300 可以接受，不要更细了。</p>
+      <span class="rule-tag note">Watch Out</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 3: SPACING
+══════════════════════════════════ -->
+<div class="section-panel" id="tab-spacing">
+  <div class="chapter-heading reveal">
+    <div class="chapter-num">03 — Spacing</div>
+    <h2>间距与边距规范</h2>
+    <p class="chapter-intro">间距决定了页面的「呼吸感」。移动端的核心挑战是在小屏幕上保持清晰的视觉层级。</p>
+  </div>
+  <div class="spacing-demo reveal">
+    <div class="spacing-row"><span class="spacing-label">页面左右边距</span><div class="spacing-bar-wrap"><div class="spacing-bar" style="width:40%"></div></div><span class="spacing-val">16–20px</span><span class="spacing-note-text" style="color:var(--accent-red);">← 最小值 16px</span></div>
+    <div class="spacing-row"><span class="spacing-label">卡片内 padding</span><div class="spacing-bar-wrap"><div class="spacing-bar" style="width:45%"></div></div><span class="spacing-val">16–24px</span><span class="spacing-note-text">四边统一</span></div>
+    <div class="spacing-row"><span class="spacing-label">段落间距</span><div class="spacing-bar-wrap"><div class="spacing-bar" style="width:30%"></div></div><span class="spacing-val">1em</span><span class="spacing-note-text">随字号自动缩放</span></div>
+    <div class="spacing-row"><span class="spacing-label">Section 间距</span><div class="spacing-bar-wrap"><div class="spacing-bar" style="width:70%"></div></div><span class="spacing-val">48–64px</span><span class="spacing-note-text">移动端比桌面小 30%</span></div>
+    <div class="spacing-row"><span class="spacing-label">桌面 Section</span><div class="spacing-bar-wrap"><div class="spacing-bar" style="width:100%"></div></div><span class="spacing-val">80–120px</span><span class="spacing-note-text">视觉更宽松</span></div>
+    <div class="spacing-row"><span class="spacing-label">按钮 padding</span><div class="spacing-bar-wrap"><div class="spacing-bar" style="width:32%"></div></div><span class="spacing-val">12px↕ 20px↔</span><span class="spacing-note-text">确保触控区 ≥ 44px</span></div>
+    <div class="spacing-row"><span class="spacing-label">可点击元素间</span><div class="spacing-bar-wrap"><div class="spacing-bar" style="width:20%"></div></div><span class="spacing-val">≥ 8px</span><span class="spacing-note-text">防止误触相邻元素</span></div>
+  </div>
+  <div class="comparison-row reveal">
+    <div class="comparison-col">
+      <h4 class="bad"><span class="dot bad"></span>Bad — 无边距，内容贴边</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen demo-bad-margin">
+          <div class="s-img">[ product image ]</div>
+          <div class="s-content">
+            <div class="s-title">Flowtica Scribe AI Pen</div>
+            <div class="s-text">Capture every meeting with studio-grade MEMS microphones and real-time AI transcription.</div>
+            <div class="s-text" style="font-size:7px;color:var(--accent-red)">← 0–2px from screen edge</div>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-note bad"><strong>× 问题</strong>文字紧贴屏幕边缘，阅读时眼睛疲劳，层级模糊。</div>
+    </div>
+    <div class="comparison-col">
+      <h4 class="good"><span class="dot good"></span>Good — 16–20px 边距</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen demo-good-margin">
+          <div class="s-img">[ product image ]</div>
+          <div class="s-content">
+            <div class="s-title">Flowtica Scribe AI Pen</div>
+            <div class="s-text">Capture every meeting with studio-grade MEMS microphones and AI transcription.</div>
+            <div style="font-size:7px;color:var(--accent-green)">✓ 16px margin — content breathes</div>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-note good"><strong>✓ 正确</strong>16px 边距，图片全出血，文字区域清晰，层级自然。</div>
+    </div>
+  </div>
+  <div class="rule-grid reveal">
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">8PT GRID</span><h3>8 倍数间距系统</h3></div>
+      <div class="rule-value ok">8, 16, 24, 32, 48, 64</div>
+      <p class="rule-desc">所有间距值使用 8 的倍数（小间距用 4 的倍数）。产生统一的节奏感，方便开发者沟通。</p>
+      <span class="rule-tag recommended">Best Practice</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">SAFE AREA</span><h3>刘海屏/底部安全区</h3></div>
+      <div class="rule-value ok">env(safe-area-inset-*)</div>
+      <p class="rule-desc">iPhone X 以上机型有底部 Home 指示条，固定底部导航/购物车栏需要加 <code>padding-bottom: env(safe-area-inset-bottom)</code>，否则按钮会被遮住。</p>
+      <span class="rule-tag critical">Critical for iOS</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 4: CONTRAST
+══════════════════════════════════ -->
+<div class="section-panel" id="tab-contrast">
+  <div class="chapter-heading reveal">
+    <div class="chapter-num">04 — Color Contrast</div>
+    <h2>颜色对比度</h2>
+    <p class="chapter-intro">在户外强光、地铁摇晃中看手机，低对比度文字会直接消失。WCAG 给出了可量化的最低标准。</p>
+  </div>
+  <div class="rule-grid reveal">
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">WCAG AA</span><h3>正文文字</h3></div>
+      <div class="rule-value ok">≥ 4.5 : 1</div>
+      <p class="rule-desc">小于 18px 正文（或小于 14px bold）必须达到 4.5:1。大多数国家无障碍法规要求的基准。</p>
+      <span class="rule-tag critical">WCAG AA</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">WCAG AA</span><h3>大号文字 / 标题</h3></div>
+      <div class="rule-value ok">≥ 3 : 1</div>
+      <p class="rule-desc">18px+ 常规字重或 14px+ 粗体可放宽到 3:1。电商转化场景建议标题也保持 4.5:1。</p>
+      <span class="rule-tag recommended">WCAG AA</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">CHECK TOOL</span><h3>如何测量</h3></div>
+      <div class="rule-value info">webaim.org/resources/<br>contrastchecker/</div>
+      <p class="rule-desc">输入前景色和背景色 hex 值，即可获得对比度比例。Chrome DevTools 也内置了对比度检查（点击颜色色块）。</p>
+      <span class="rule-tag info">Free Tool</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">IMAGE TEXT</span><h3>图片内嵌文字</h3></div>
+      <div class="rule-value info">吸管工具取色</div>
+      <p class="rule-desc">用 imagecolorpicker.com 上传图片，分别取「文字颜色」和「文字背景颜色」的 hex，再到对比度检测工具验证。图片背景若非纯色，取最浅处背景验证。</p>
+      <span class="rule-tag note">Special Case</span>
+    </div>
+  </div>
+  <div class="comparison-row reveal">
+    <div class="comparison-col">
+      <h4 class="bad"><span class="dot bad"></span>Bad — 对比度不足</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen demo-bad-contrast">
+          <div class="s-header">FLOWTICA SCRIBE</div>
+          <div class="s-content">
+            <div class="s-title">AI Recording Pen</div>
+            <div class="s-text">The only device that captures and transcribes your conversations in real time.</div>
+            <div class="s-btn">Order Now — $299</div>
+            <div style="font-size:7px;margin-top:6px;color:var(--accent-red)">Header: ~1.3:1 · Text: ~2.1:1 · Both fail AA</div>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-note bad"><strong>× 问题</strong>浅蓝文字在蓝色背景对比度约 1.3:1，户外阳光下完全看不见。</div>
+    </div>
+    <div class="comparison-col">
+      <h4 class="good"><span class="dot good"></span>Good — 高对比度</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen demo-good-contrast">
+          <div class="s-header">FLOWTICA SCRIBE</div>
+          <div class="s-content">
+            <div class="s-title">AI Recording Pen</div>
+            <div class="s-text">The only device that captures and transcribes your conversations in real time.</div>
+            <div class="s-btn">Order Now — $299</div>
+            <div style="font-size:7px;margin-top:6px;color:var(--accent-green)">Dark ink on cream: ~15:1 · Exceeds AAA</div>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-note good"><strong>✓ 正确</strong>Flowtica #1a1714 在米白背景达约 15:1，远超 AAA 标准。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 5: BREAKPOINTS
+══════════════════════════════════ -->
+<div class="section-panel" id="tab-breakpoints">
+  <div class="chapter-heading reveal">
+    <div class="chapter-num">05 — Responsive Breakpoints</div>
+    <h2>响应式断点</h2>
+    <p class="chapter-intro">断点决定了网页在什么宽度「切换」布局。你的主题用了自定义断点，与行业惯例不同。</p>
+  </div>
+  <div class="breakpoint-vis reveal">
+    <div class="bp-track">
+      <div class="bp-zone mobile">Mobile<br>&lt;480</div>
+      <div class="bp-zone tablet">Tablet<br>480–768</div>
+      <div class="bp-zone desktop">Desktop<br>768–1024</div>
+      <div class="bp-zone wide">Wide &gt;1024px</div>
+    </div>
+    <div class="bp-label"><span>0</span><span>480px</span><span>768px</span><span>1024px</span><span>1440px</span></div>
+    <div class="bp-note">
+      <strong>⚠ Flowtica 主题的实际断点</strong>
+      你们的主题使用 Tailwind 的 <code>max-md:</code> 变体，但配置了自定义断点 <strong>1200px（75rem）</strong>，而不是行业惯用的 768px。这意味着 768px 到 1200px 之间（平板、小屏 Mac）都走移动端样式。这是之前 Hero 按钮 Tailwind 类失效的根源。
+    </div>
+  </div>
+  <div class="comparison-row reveal">
+    <div class="comparison-col">
+      <h4 class="bad"><span class="dot bad"></span>Bad — 桌面布局硬塞进手机宽度</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="font-family:sans-serif;overflow:hidden;">
+          <div style="background:#4a90d9;padding:8px 10px;color:white;font-size:9px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;">
+            <span>Flowtica</span>
+            <div style="display:flex;gap:8px;font-size:7px;font-weight:normal;"><span>Product</span><span>Reviews</span><span>Buy</span><span>About</span><span>Blog</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:6px;">
+            <div style="background:#f0f0f0;padding:6px;border-radius:2px;font-size:6px;">
+              <div style="background:#ddd;height:40px;margin-bottom:4px;border-radius:1px;"></div>
+              <div style="font-weight:bold;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Flowtica Scribe</div>
+              <div style="color:#888;">$299</div>
+            </div>
+            <div style="background:#f0f0f0;padding:6px;border-radius:2px;font-size:6px;">
+              <div style="background:#ddd;height:40px;margin-bottom:4px;border-radius:1px;"></div>
+              <div style="font-weight:bold;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Scribe Pro+</div>
+              <div style="color:#888;">$399</div>
+            </div>
+            <div style="background:#f0f0f0;padding:6px;border-radius:2px;font-size:6px;">
+              <div style="background:#ddd;height:40px;margin-bottom:4px;border-radius:1px;"></div>
+              <div style="font-weight:bold;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Accessories</div>
+              <div style="color:#888;">$49</div>
+            </div>
+          </div>
+          <div style="font-size:6px;color:var(--accent-red);padding:0 8px 6px;">← 3-column desktop grid on 375px. Nav items overflow. Text is illegible.</div>
+        </div>
+      </div>
+      <div class="comparison-note bad"><strong>× 问题</strong>三列桌面网格强行放进 375px，每列宽度约 100px，图片和文字都太小。导航项也溢出。没有响应式断点切换布局。</div>
+    </div>
+    <div class="comparison-col">
+      <h4 class="good"><span class="dot good"></span>Good — 断点切换为单列移动端布局</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="font-family:sans-serif;">
+          <div style="background:#1a1714;padding:12px 14px;color:white;font-size:10px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;">
+            <span>Flowtica</span>
+            <div style="display:flex;flex-direction:column;gap:3px;cursor:pointer;"><div style="width:16px;height:1.5px;background:white;"></div><div style="width:16px;height:1.5px;background:white;"></div><div style="width:16px;height:1.5px;background:white;"></div></div>
+          </div>
+          <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px;">
+            <div style="background:#f0ebe0;padding:10px;border-radius:4px;font-size:8px;">
+              <div style="background:linear-gradient(135deg,#ddd,#c8bfaa);height:80px;border-radius:3px;margin-bottom:8px;"></div>
+              <div style="font-weight:700;font-size:10px;margin-bottom:3px;">Flowtica Scribe</div>
+              <div style="color:#666;margin-bottom:6px;">The AI recording pen</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:600;">$299</span><div style="background:#1a1714;color:white;padding:5px 10px;border-radius:3px;font-size:7px;">Add to Cart</div></div>
+            </div>
+          </div>
+          <div style="font-size:6.5px;color:var(--accent-green);padding:0 14px 8px;">✓ Single column at 375px. Full-width card, legible text, accessible CTA.</div>
+        </div>
+      </div>
+      <div class="comparison-note good"><strong>✓ 正确</strong>断点触发后切换为单列布局，卡片全宽显示，图片、文字、按钮尺寸都舒适可读。汉堡菜单代替展开导航。</div>
+    </div>
+  </div>
+
+  <div class="rule-grid reveal">
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">TEST DEVICE</span><h3>必测的三个宽度</h3></div>
+      <div class="rule-value ok">375 / 390 / 428px</div>
+      <p class="rule-desc">iPhone SE (375px), iPhone 14 (390px), iPhone 14 Plus (428px)。覆盖 80% 以上 iOS 用户。Android 主流宽度 360–412px，也在此区间内。</p>
+      <span class="rule-tag recommended">Test Plan</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">COMMUNICATION</span><h3>与开发沟通断点</h3></div>
+      <div class="rule-value info">用具体数值，不用「移动端」</div>
+      <p class="rule-desc">不要说「移动端下面」，要说「在 375px 到 768px 之间」。含糊的描述是最常见的沟通失误来源，开发者不知道该写哪个 breakpoint。</p>
+      <span class="rule-tag note">Communication</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 6: INTERACTION
+══════════════════════════════════ -->
+<div class="section-panel" id="tab-interaction">
+  <div class="chapter-heading reveal">
+    <div class="chapter-num">06 — Interaction Details</div>
+    <h2>交互细节</h2>
+    <p class="chapter-intro">几个容易被忽视的移动端交互规范，每一个都直接影响用户的操作感受。</p>
+  </div>
+  <div class="rule-grid reveal">
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">TAP DELAY</span><h3>消除 300ms 点击延迟</h3></div>
+      <div class="rule-value ok">touch-action: manipulation</div>
+      <p class="rule-desc">移动浏览器为了区分「点击」和「双指缩放」，默认等 300ms 再响应点击。设置 <code>touch-action: manipulation</code> 或正确配置 viewport meta 可消除。延迟会让按钮感觉「反应迟钝」。</p>
+      <span class="rule-tag recommended">Quick Win</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">HOVER TRAP</span><h3>Hover 不是移动端的信息载体</h3></div>
+      <div class="rule-value danger">手机无 hover 状态</div>
+      <p class="rule-desc">桌面端的 <code>:hover</code> 工具提示在手机上完全不存在。如果某个说明、价格明细、尺寸信息只有 hover 才能看到，手机用户永远看不到它。信息必须默认可见，或有明确的点击触发方式。</p>
+      <span class="rule-tag critical">Critical</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">OVERFLOW</span><h3>横向滚动是 Bug，不是功能</h3></div>
+      <div class="rule-value danger">意外横向滚动条</div>
+      <p class="rule-desc">页面出现意外横向滚动条，99% 是某个元素宽度超出 viewport。快速排查：<code>* &#123; outline: 1px solid red &#125;</code> 可视化所有元素边界，找到溢出元素。</p>
+      <span class="rule-tag critical">Debug Tool</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">FLEXBOX</span><h3>Flex 子项默认不收缩</h3></div>
+      <div class="rule-value danger">min-width: auto 陷阱</div>
+      <p class="rule-desc">Flexbox 默认 <code>min-width: auto</code>，意味着内容不会自动换行收缩，很容易在小屏幕撑破容器。给 flex 子项加 <code>min-width: 0</code> 或 <code>overflow: hidden</code> 可解决。这是移动端「内容超出」最常见的技术原因。</p>
+      <span class="rule-tag note">Common Gotcha</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">FIXED HEIGHT</span><h3>禁止固定高度容纳文字</h3></div>
+      <div class="rule-value danger">height: 60px → 截断</div>
+      <p class="rule-desc">含文字的元素不能用 <code>height</code>，必须用 <code>min-height</code>。文字翻译后会变长（德语/西语长 20–35%），固定高度会截断内容。按钮高度可以固定，因为按钮文字通常可控。</p>
+      <span class="rule-tag critical">Critical for i18n</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">ZOOM</span><h3>禁止禁用用户缩放</h3></div>
+      <div class="rule-value danger">user-scalable=no</div>
+      <p class="rule-desc">禁止用户缩放页面会让视力不好的用户无法阅读内容，WCAG 明确要求不得禁止。iOS 16+ Safari 已强制忽略这个设置，Android 仍有效 — 不要写 <code>maximum-scale=1</code>。</p>
+      <span class="rule-tag critical">WCAG Violation</span>
+    </div>
+  </div>
+
+  <div class="comparison-row reveal">
+    <div class="comparison-col">
+      <h4 class="bad"><span class="dot bad"></span>Bad — 关键信息只在 hover 时显示</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="font-family:sans-serif;padding:12px;">
+          <div style="font-size:9px;font-weight:bold;margin-bottom:10px;">Choose Your Plan</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="border:1px solid #ddd;border-radius:4px;padding:8px;position:relative;">
+              <div style="font-size:8.5px;font-weight:600;">Basic · $9/mo</div>
+              <div style="font-size:7px;color:#aaa;margin-top:2px;">Hover to see what's included</div>
+              <div style="background:#f0f0f0;border-radius:2px;padding:3px 6px;font-size:6px;color:#888;margin-top:5px;display:inline-block;">ℹ Details on hover</div>
+            </div>
+            <div style="border:1px solid #ddd;border-radius:4px;padding:8px;">
+              <div style="font-size:8.5px;font-weight:600;">Pro · $29/mo</div>
+              <div style="font-size:7px;color:#aaa;margin-top:2px;">Hover to see what's included</div>
+              <div style="background:#f0f0f0;border-radius:2px;padding:3px 6px;font-size:6px;color:#888;margin-top:5px;display:inline-block;">ℹ Details on hover</div>
+            </div>
+          </div>
+          <div style="font-size:6px;color:var(--accent-red);margin-top:8px;">← Mobile users can never see plan details. No tap alternative provided.</div>
+        </div>
+      </div>
+      <div class="comparison-note bad"><strong>× 问题</strong>产品详情只通过 hover 工具提示展示。手机用户无法触发 hover，永远看不到对比信息，无法做购买决策。</div>
+    </div>
+    <div class="comparison-col">
+      <h4 class="good"><span class="dot good"></span>Good — 信息默认可见，或有明确点击展开</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="font-family:sans-serif;padding:12px;">
+          <div style="font-size:9px;font-weight:bold;margin-bottom:10px;">Choose Your Plan</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="border:1px solid #ddd;border-radius:4px;padding:8px;">
+              <div style="font-size:8.5px;font-weight:600;margin-bottom:4px;">Basic · $9/mo</div>
+              <div style="font-size:7px;color:#555;line-height:1.5;">✓ 10 hours/month recording<br>✓ Basic transcription<br>✓ 1 device</div>
+            </div>
+            <div style="border:1.5px solid #1a1714;border-radius:4px;padding:8px;background:#fafaf8;">
+              <div style="font-size:7px;font-family:monospace;color:#1a1714;background:#e8e4da;padding:2px 5px;border-radius:2px;display:inline-block;margin-bottom:4px;">POPULAR</div>
+              <div style="font-size:8.5px;font-weight:600;margin-bottom:4px;">Pro · $29/mo</div>
+              <div style="font-size:7px;color:#444;line-height:1.5;">✓ Unlimited recording<br>✓ AI speaker tagging<br>✓ 5 devices</div>
+            </div>
+          </div>
+          <div style="font-size:6px;color:var(--accent-green);margin-top:6px;">✓ All details visible by default. No hover required.</div>
+        </div>
+      </div>
+      <div class="comparison-note good"><strong>✓ 正确</strong>所有关键信息默认展示，不依赖 hover。移动端用户打开即可完整比较两个方案，无需任何额外操作。</div>
+    </div>
+  </div>
+
+  <div class="comparison-row reveal">
+    <div class="comparison-col">
+      <h4 class="bad"><span class="dot bad"></span>Bad — Flex 溢出导致横向滚动</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="font-family:sans-serif;padding:10px;overflow:hidden;">
+          <div style="font-size:9px;font-weight:bold;margin-bottom:8px;">Key Features</div>
+          <div style="display:flex;gap:8px;">
+            <div style="background:#e8f4fd;border-radius:4px;padding:8px;min-width:120px;font-size:7px;">
+              <div style="font-size:9px;margin-bottom:3px;">🎙</div>
+              <div style="font-weight:600;margin-bottom:2px;white-space:nowrap;">MEMS Microphone</div>
+              <div style="color:#666;">Studio-grade clarity</div>
+            </div>
+            <div style="background:#e6f4ed;border-radius:4px;padding:8px;min-width:120px;font-size:7px;">
+              <div style="font-size:9px;margin-bottom:3px;">🤖</div>
+              <div style="font-weight:600;margin-bottom:2px;white-space:nowrap;">AI Transcription</div>
+              <div style="color:#666;">Real-time accuracy</div>
+            </div>
+            <div style="background:#fef3e1;border-radius:4px;padding:8px;min-width:120px;font-size:7px;">
+              <div style="font-size:9px;margin-bottom:3px;">🔋</div>
+              <div style="font-weight:600;margin-bottom:2px;white-space:nowrap;">32hr Battery</div>
+              <div style="color:#666;">All-day endurance</div>
+            </div>
+          </div>
+          <div style="font-size:6px;color:var(--accent-red);margin-top:6px;">← Flex items have min-width:120px. They overflow and cause horizontal scroll.</div>
+        </div>
+      </div>
+      <div class="comparison-note bad"><strong>× 问题</strong>Flex 子项设了 <code>min-width: 120px</code>，三张卡片总宽度超出 375px 屏幕，撑出横向滚动条。用户会以为页面坏了。</div>
+    </div>
+    <div class="comparison-col">
+      <h4 class="good"><span class="dot good"></span>Good — flex-wrap 或 grid 自动换行</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="font-family:sans-serif;padding:10px;">
+          <div style="font-size:9px;font-weight:bold;margin-bottom:8px;">Key Features</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="background:#e8f4fd;border-radius:4px;padding:8px;font-size:7px;">
+              <div style="font-size:9px;margin-bottom:3px;">🎙</div>
+              <div style="font-weight:600;margin-bottom:2px;">MEMS Mic</div>
+              <div style="color:#666;">Studio-grade clarity</div>
+            </div>
+            <div style="background:#e6f4ed;border-radius:4px;padding:8px;font-size:7px;">
+              <div style="font-size:9px;margin-bottom:3px;">🤖</div>
+              <div style="font-weight:600;margin-bottom:2px;">AI Transcription</div>
+              <div style="color:#666;">Real-time accuracy</div>
+            </div>
+            <div style="background:#fef3e1;border-radius:4px;padding:8px;font-size:7px;">
+              <div style="font-size:9px;margin-bottom:3px;">🔋</div>
+              <div style="font-weight:600;margin-bottom:2px;">32hr Battery</div>
+              <div style="color:#666;">All-day endurance</div>
+            </div>
+            <div style="background:#f0ebe0;border-radius:4px;padding:8px;font-size:7px;">
+              <div style="font-size:9px;margin-bottom:3px;">📱</div>
+              <div style="font-weight:600;margin-bottom:2px;">MFi Certified</div>
+              <div style="color:#666;">Apple compatible</div>
+            </div>
+          </div>
+          <div style="font-size:6.5px;color:var(--accent-green);margin-top:6px;">✓ grid: 1fr 1fr. Fits any screen width. No overflow.</div>
+        </div>
+      </div>
+      <div class="comparison-note good"><strong>✓ 正确</strong>改用 <code>grid-template-columns: 1fr 1fr</code>，两列自适应宽度，无论屏幕多宽都不会溢出。内容更整齐，阅读更高效。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 7: PERFORMANCE
+══════════════════════════════════ -->
+<div class="section-panel" id="tab-performance">
+  <div class="chapter-heading reveal">
+    <div class="chapter-num">07 — Performance</div>
+    <h2>页面性能</h2>
+    <p class="chapter-intro">性能是隐形的 UX。加载慢不只是烦人 — Google 的 Core Web Vitals 直接影响搜索排名，而移动端网络比桌面端慢得多。</p>
+  </div>
+  <div class="perf-meter reveal">
+    <div class="perf-row">
+      <span class="perf-label">LCP</span>
+      <div class="perf-track">
+        <div class="perf-seg good" style="width:33%">Good ≤2.5s</div>
+        <div class="perf-seg warn" style="width:23%">≤4s</div>
+        <div class="perf-seg bad" style="width:44%">Poor &gt;4s</div>
+      </div>
+      <span class="perf-val">目标 ≤ 2.5s</span>
+    </div>
+    <div class="perf-row">
+      <span class="perf-label">INP</span>
+      <div class="perf-track">
+        <div class="perf-seg good" style="width:33%">Good ≤200ms</div>
+        <div class="perf-seg warn" style="width:22%">≤500ms</div>
+        <div class="perf-seg bad" style="width:45%">Poor &gt;500ms</div>
+      </div>
+      <span class="perf-val">目标 ≤ 200ms</span>
+    </div>
+    <div class="perf-row">
+      <span class="perf-label">CLS</span>
+      <div class="perf-track">
+        <div class="perf-seg good" style="width:33%">Good ≤0.1</div>
+        <div class="perf-seg warn" style="width:22%">≤0.25</div>
+        <div class="perf-seg bad" style="width:45%">Poor &gt;0.25</div>
+      </div>
+      <span class="perf-val">目标 ≤ 0.1</span>
+    </div>
+  </div>
+  <div class="rule-grid reveal">
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">LCP IMAGE</span><h3>Hero 图片优化</h3></div>
+      <div class="rule-value ok">fetchpriority="high"</div>
+      <p class="rule-desc">Hero 区域图片通常是 LCP 元素。加 <code>loading="eager"</code> + <code>fetchpriority="high"</code> 让浏览器优先加载。格式用 WebP（体积比 JPG 小 25–34%）。Shopify 正确写法是用 Liquid filter：<code>{{ image | image_url: width: 375 }}</code>，不要用旧版 URL 参数 <code>_375x</code>（Dawn OS 2.0 已弃用）。在 <code>.liquid</code> 文件里通过 <code>image_tag</code> filter 传入 <code>loading: 'eager', fetchpriority: 'high'</code> 参数。</p>
+      <span class="rule-tag critical">Critical</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">IMAGE SIZE</span><h3>图片不压缩是最大杀手</h3></div>
+      <div class="rule-value danger">3000px → 375px 显示</div>
+      <p class="rule-desc">移动端按 375px 显示的图片，如果上传的是 3000px 宽 JPG，浏览器下载完整文件再缩小 — 浪费几十倍流量。Shopify 支持 <code>image_url: width: 375</code> filter 自动输出正确尺寸。</p>
+      <span class="rule-tag critical">Critical</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">VIDEO</span><h3>视频自动播放三件套</h3></div>
+      <div class="rule-value ok">autoplay muted playsinline</div>
+      <p class="rule-desc">iOS Safari 默认禁止自动播放有声视频。要在 iPhone 上静音自动播放，必须同时加这三个属性。缺少 <code>playsinline</code> 会在 iPhone 上弹出全屏播放器，破坏页面布局。</p>
+      <span class="rule-tag critical">Critical for iOS</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">CLS</span><h3>图片必须声明宽高</h3></div>
+      <div class="rule-value ok">width + height 属性</div>
+      <p class="rule-desc">图片加载前没有声明尺寸，加载完成后会撑开页面导致内容跳动（CLS 差）。给所有 <code>&lt;img&gt;</code> 加 <code>width</code> 和 <code>height</code> 属性，浏览器提前预留空间。</p>
+      <span class="rule-tag recommended">Core Web Vitals</span>
+    </div>
+  </div>
+  <div class="callout info reveal">
+    <span class="callout-icon">ℹ</span>
+    <div><strong style="display:block;margin-bottom:4px">如何测量你们的 Core Web Vitals</strong>打开 Chrome → 访问 flowtica.ai → F12 → Lighthouse 面板 → 选「Mobile」设备 → 点「Analyze page load」。会给出 LCP / INP / CLS 的实测分数和具体改善建议。每次大改版后跑一次。</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 8: FORMS
+══════════════════════════════════ -->
+<div class="section-panel" id="tab-forms">
+  <div class="chapter-heading reveal">
+    <div class="chapter-num">08 — Forms & Input</div>
+    <h2>表单与输入</h2>
+    <p class="chapter-intro">表单是转化的最后一步。移动端表单有几个独特的规范，违反任何一条都会大幅提高放弃率。</p>
+  </div>
+  <div class="comparison-row reveal">
+    <div class="comparison-col">
+      <h4 class="bad"><span class="dot bad"></span>Bad — 只用 placeholder 代替 label</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen demo-bad-form">
+          <div class="s-content">
+            <div class="s-title">Get Early Access</div>
+            <div class="s-input">Your name…</div>
+            <div class="s-input">your@email.com…</div>
+            <div class="s-input">Phone number…</div>
+            <div class="s-note">← After typing, placeholder disappears. User forgets what field this is.</div>
+            <div class="s-btn">Submit</div>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-note bad"><strong>× 问题</strong>Placeholder 在用户输入后消失。填到一半忘记字段含义，尤其多字段表单中极常见。</div>
+    </div>
+    <div class="comparison-col">
+      <h4 class="good"><span class="dot good"></span>Good — Label 在上方，placeholder 为辅助</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen demo-good-form">
+          <div class="s-content">
+            <div class="s-title">Get Early Access</div>
+            <div class="s-label">Full name</div>
+            <div class="s-input">e.g. Alex Chen</div>
+            <div class="s-label">Email address</div>
+            <div class="s-input">your@email.com</div>
+            <div class="s-note">✓ Label stays visible after typing. No confusion.</div>
+            <div class="s-btn">Submit</div>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-note good"><strong>✓ 正确</strong>Label 始终可见，placeholder 只是格式提示。用户输入中途不会迷失。</div>
+    </div>
+  </div>
+  <h3 style="font-family:var(--mono);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--warm-mid);margin-bottom:20px;" class="reveal">键盘类型 — 正确的 input type / inputmode</h3>
+  <div class="keyboard-grid reveal">
+    <div class="keyboard-demo">
+      <div class="kbd-label">Email</div>
+      <div class="kbd-type">type="email"</div>
+      <div class="kbd-img">
+        <div class="kbd-row"><div class="kbd-key">q</div><div class="kbd-key">w</div><div class="kbd-key">e</div><div class="kbd-key">r</div><div class="kbd-key">t</div><div class="kbd-key">y</div></div>
+        <div class="kbd-row"><div class="kbd-key accent wide">@</div><div class="kbd-key">a</div><div class="kbd-key">s</div><div class="kbd-key">d</div><div class="kbd-key accent">.</div></div>
+        <div class="kbd-row"><div class="kbd-key special">space</div><div class="kbd-key accent special">return</div></div>
+      </div>
+    </div>
+    <div class="keyboard-demo">
+      <div class="kbd-label">电话号码</div>
+      <div class="kbd-type">type="tel"</div>
+      <div class="kbd-img">
+        <div class="kbd-row"><div class="kbd-key">1</div><div class="kbd-key">2</div><div class="kbd-key">3</div></div>
+        <div class="kbd-row"><div class="kbd-key">4</div><div class="kbd-key">5</div><div class="kbd-key">6</div></div>
+        <div class="kbd-row"><div class="kbd-key">7</div><div class="kbd-key">8</div><div class="kbd-key">9</div></div>
+        <div class="kbd-row"><div class="kbd-key">*</div><div class="kbd-key accent">0</div><div class="kbd-key accent">#</div></div>
+      </div>
+    </div>
+    <div class="keyboard-demo">
+      <div class="kbd-label">金额/小数</div>
+      <div class="kbd-type">inputmode="decimal"</div>
+      <div class="kbd-img">
+        <div class="kbd-row"><div class="kbd-key">1</div><div class="kbd-key">2</div><div class="kbd-key">3</div></div>
+        <div class="kbd-row"><div class="kbd-key">4</div><div class="kbd-key">5</div><div class="kbd-key">6</div></div>
+        <div class="kbd-row"><div class="kbd-key">7</div><div class="kbd-key">8</div><div class="kbd-key">9</div></div>
+        <div class="kbd-row"><div class="kbd-key accent">.</div><div class="kbd-key">0</div><div class="kbd-key special">⌫</div></div>
+      </div>
+    </div>
+    <div class="keyboard-demo">
+      <div class="kbd-label">搜索</div>
+      <div class="kbd-type">type="search"</div>
+      <div class="kbd-img">
+        <div class="kbd-row"><div class="kbd-key">q</div><div class="kbd-key">w</div><div class="kbd-key">e</div><div class="kbd-key">r</div><div class="kbd-key">t</div><div class="kbd-key">y</div></div>
+        <div class="kbd-row"><div class="kbd-key">a</div><div class="kbd-key">s</div><div class="kbd-key">d</div><div class="kbd-key">f</div><div class="kbd-key">g</div></div>
+        <div class="kbd-row"><div class="kbd-key special">space</div><div class="kbd-key accent special">Search</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="rule-grid reveal">
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">INPUT HEIGHT</span><h3>输入框最小高度</h3></div>
+      <div class="rule-value ok">≥ 44px</div>
+      <p class="rule-desc">同触控目标原则。输入框点击区域也必须够大，否则用户难以准确点中。加 <code>padding: 12px 16px</code> 自然达到 44px 高度同时改善可读性。</p>
+      <span class="rule-tag critical">Critical</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">AUTOCOMPLETE</span><h3>开启自动填充</h3></div>
+      <div class="rule-value ok">autocomplete 属性</div>
+      <p class="rule-desc">给输入框加 <code>autocomplete="email"</code>、<code>autocomplete="name"</code> 等属性，让浏览器/iOS 自动填充已保存的信息，大幅减少手机键盘输入量，提升结账转化率。</p>
+      <span class="rule-tag recommended">Conversion Win</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 9: I18N
+══════════════════════════════════ -->
+<div class="section-panel" id="tab-i18n">
+  <div class="chapter-heading reveal">
+    <div class="chapter-num">09 — Internationalization</div>
+    <h2>多语种排版规范</h2>
+    <p class="chapter-intro">日语、德语、西班牙语都有专属的排版规范。英文设计师照搬英文规范到其他语种，是很多国际化页面翻车的根源。</p>
+  </div>
+
+  <div class="callout danger reveal">
+    <span class="callout-icon">🔴</span>
+    <div><strong style="display:block;margin-bottom:4px">固定宽度按钮是多语种的头号杀手</strong>德语「Add to Cart」→「In den Warenkorb legen」，长度近乎翻倍。<code>width: 106px</code> 的按钮在德语版会截断文字。所有按钮必须用 <code>min-width</code> + 自动撑开，或允许换行。</div>
+  </div>
+
+  <div class="comparison-row reveal">
+    <div class="comparison-col">
+      <h4 class="bad"><span class="dot bad"></span>Bad — 固定宽度按钮遇到德语</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen demo-bad-i18n">
+          <div class="s-content">
+            <div class="s-text" style="font-weight:bold;margin-bottom:6px;">Flowtica Scribe</div>
+            <div class="s-text">KI-Aufnahmestift für professionelle Anwender.</div>
+            <div class="s-btn-wrap">
+              <div class="s-btn">In den Waren…</div>
+              <div class="s-btn">Mehr erfah…</div>
+            </div>
+            <div class="s-overflow">← Text clipped. width: 90px is too narrow for German.</div>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-note bad"><strong>× 问题</strong>固定宽度按钮截断德语文字，用户无法看到完整 CTA，直接影响转化。</div>
+    </div>
+    <div class="comparison-col">
+      <h4 class="good"><span class="dot good"></span>Good — min-width 自动撑开</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen demo-good-i18n">
+          <div class="s-content">
+            <div class="s-text" style="font-weight:bold;margin-bottom:6px;">Flowtica Scribe</div>
+            <div class="s-text">KI-Aufnahmestift für professionelle Anwender.</div>
+            <div class="s-btn-wrap">
+              <div class="s-btn">In den Warenkorb</div>
+              <div class="s-btn">Mehr erfahren</div>
+            </div>
+            <div class="s-note">✓ min-width + auto stretch. Full text visible.</div>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-note good"><strong>✓ 正确</strong>按钮宽度自动适配内容长度，德语完整可读。</div>
+    </div>
+  </div>
+
+  <table class="lang-table reveal">
+    <thead>
+      <tr><th>语言</th><th>关键规范</th><th>具体要求</th><th>如果忽略</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="lang-tag ja">日语</span></td>
+        <td>最小字号</td>
+        <td>≥ 14px（建议 15–16px）。日文汉字笔画密集，比英文需要更大字号才能清晰。</td>
+        <td>字符模糊不可读，尤其低 PPI 设备</td>
+      </tr>
+      <tr>
+        <td><span class="lang-tag ja">日语</span></td>
+        <td>行高</td>
+        <td>1.7–1.9（比英文 1.5 更大）。日文字符高度接近，行间没有天然空隙。</td>
+        <td>文字密成一块，视觉极度不适</td>
+      </tr>
+      <tr>
+        <td><span class="lang-tag ja">日语</span></td>
+        <td>断字规则</td>
+        <td>用 <code>line-break: strict</code> 处理标点禁则（句号、括号不能出现在行首）。</td>
+        <td>悬挂标点，日本用户觉得极度业余</td>
+      </tr>
+      <tr>
+        <td><span class="lang-tag ja">日语</span></td>
+        <td>禁用 word-break: break-all</td>
+        <td>这个属性对英文有用，对日文会在错误位置断字，语义被切断。</td>
+        <td>词义被截断，不可读</td>
+      </tr>
+      <tr>
+        <td><span class="lang-tag de">德语</span></td>
+        <td>长单词断词</td>
+        <td>加 <code>hyphens: auto</code> + HTML 标签设 <code>lang="de"</code>。「Datenschutzerklärung」一个词能撑破移动端容器。</td>
+        <td>横向滚动条，布局破版</td>
+      </tr>
+      <tr>
+        <td><span class="lang-tag de">德语</span></td>
+        <td>内容长度 +30%</td>
+        <td>所有容纳文字的容器用 <code>min-height</code>，按钮用 <code>min-width</code>，绝不写死尺寸。</td>
+        <td>文字截断，CTA 不完整</td>
+      </tr>
+      <tr>
+        <td><span class="lang-tag de">德语</span></td>
+        <td>Eszett 大写</td>
+        <td>对德文用 <code>text-transform: uppercase</code> 前，确认字体支持 ẞ，否则 ß → SS，词义改变。</td>
+        <td>语义错误，专业度受损</td>
+      </tr>
+      <tr>
+        <td><span class="lang-tag es">西语</span></td>
+        <td>内容长度 +20%</td>
+        <td>同德语原则，用弹性宽度。「Subscribe」→「Suscribirse」，「Free Shipping」→「Envío gratuito」。</td>
+        <td>按钮文字截断或换行破坏布局</td>
+      </tr>
+      <tr>
+        <td><span class="lang-tag es">西语</span></td>
+        <td>倒置标点 ¡ ¿</td>
+        <td>检查这两个字符在所用字体中的渲染高度，确认与首行其他字符对齐。</td>
+        <td>首行视觉错位，段落开头有「漂浮感」</td>
+      </tr>
+      <tr>
+        <td><span class="lang-tag all">所有语言</span></td>
+        <td>lang 属性</td>
+        <td><code>&lt;html lang="ja"&gt;</code> / <code>lang="de"&gt;</code> 必须随页面语言切换。影响断词、引号、hyphens 是否生效。</td>
+        <td>所有 CSS 断词规则全部失效</td>
+      </tr>
+      <tr>
+        <td><span class="lang-tag all">所有语言</span></td>
+        <td>图片内嵌文字</td>
+        <td>图片里的文字无法本地化。英文图片出现在日语页面上，品牌感和信任感受损。图文必须分离，文字用 HTML 叠加。</td>
+        <td>英文内容混入多语种页面</td>
+      </tr>
+      <tr>
+        <td><span class="lang-tag all">所有语言</span></td>
+        <td>字体字符集</td>
+        <td>Google Fonts 默认只加载 Latin 字符集。日语需要单独加载日文字体（文件体积大，需 font-display: swap）。</td>
+        <td>日语回退到系统字体，品牌感消失</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 10: ACCESSIBILITY
+══════════════════════════════════ -->
+<div class="section-panel" id="tab-a11y">
+  <div class="chapter-heading reveal">
+    <div class="chapter-num">10 — Accessibility & Edge Cases</div>
+    <h2>无障碍 & 边缘情况</h2>
+    <p class="chapter-intro">无障碍不只是服务残障用户 — 老年人、弱视用户、户外强光下的普通用户都会受益。这些规范同时也是很多国家的法律要求。</p>
+  </div>
+  <div class="rule-grid reveal">
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">FONT SCALE</span><h3>系统字体放大 200% 不破版</h3></div>
+      <div class="rule-value ok">用 rem / em，不用 px</div>
+      <p class="rule-desc">用户在系统无障碍设置里调大字体（老年用户常用），好的布局用相对单位自动适配。验证：Chrome DevTools → Rendering → Font size → 调到 200%，检查是否有文字溢出容器。</p>
+      <span class="rule-tag recommended">A11y</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">DARK MODE</span><h3>深色模式适配</h3></div>
+      <div class="rule-value ok">color-scheme: light</div>
+      <p class="rule-desc">如果没有专门适配深色模式，至少在 <code>&lt;meta&gt;</code> 或 CSS 里声明 <code>color-scheme: light</code>，防止浏览器自动反转颜色导致白底白字（完全不可读）。</p>
+      <span class="rule-tag note">Prevent Disasters</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">ALT TEXT</span><h3>图片 alt 文字</h3></div>
+      <div class="rule-value ok">alt="描述性文字"</div>
+      <p class="rule-desc">所有产品图片必须有有意义的 <code>alt</code> 属性。装饰性图片用 <code>alt=""</code>（空值，屏幕阅读器跳过）。Shopify 在后台上传图片时可以填写 alt 文字。</p>
+      <span class="rule-tag critical">WCAG A</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">FOCUS STATE</span><h3>键盘焦点样式</h3></div>
+      <div class="rule-value danger">不能用 outline: none</div>
+      <p class="rule-desc">很多设计师为了「好看」移除了 <code>:focus</code> 样式。这让使用键盘或辅助技术的用户完全看不出焦点在哪里。可以自定义焦点样式，但不能移除。</p>
+      <span class="rule-tag critical">WCAG AA</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">LANDSCAPE</span><h3>横屏模式不破版</h3></div>
+      <div class="rule-value ok">测试横屏布局</div>
+      <p class="rule-desc">将手机旋转到横屏，检查 Hero 高度是否过高挡住内容，固定底部元素是否占用太多屏幕空间。Hero 用 <code>min-height</code> 而非 <code>height: 100vh</code> 可避免横屏时全屏被占满。</p>
+      <span class="rule-tag note">Edge Case</span>
+    </div>
+    <div class="rule-card">
+      <div class="rule-card-header"><span class="rule-num">RTL FUTURE</span><h3>为 RTL 语言预留</h3></div>
+      <div class="rule-value ok">逻辑属性</div>
+      <p class="rule-desc">现在用逻辑属性（<code>margin-inline-start</code> 而非 <code>margin-left</code>），未来支持阿拉伯语/希伯来语时只需加一行 <code>dir="rtl"</code>，不需要重写所有间距规则。</p>
+      <span class="rule-tag info">Future-Proof</span>
+    </div>
+  </div>
+  <div class="comparison-row reveal">
+    <div class="comparison-col">
+      <h4 class="bad"><span class="dot bad"></span>Bad — 移除了焦点样式 (outline: none)</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="font-family:sans-serif;padding:14px 12px;">
+          <div style="font-size:9px;font-weight:bold;margin-bottom:12px;">Quick Links</div>
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <div style="padding:9px 0;font-size:8.5px;border-bottom:1px solid #eee;color:#333;">Product Overview</div>
+            <div style="padding:9px 0;font-size:8.5px;border-bottom:1px solid #eee;color:#333;background:white;">Technical Specs</div>
+            <div style="padding:9px 0;font-size:8.5px;border-bottom:1px solid #eee;color:#4a90d9;background:white;">Buy Now →</div>
+          </div>
+          <div style="margin-top:12px;font-size:7px;background:#f5f5f5;padding:8px;border-radius:3px;">
+            <div style="color:#888;margin-bottom:4px;">Keyboard / assistive nav:</div>
+            <div style="padding:6px 8px;background:white;border-radius:2px;font-size:7px;color:#555;">Technical Specs <span style="color:#bbb;font-size:6px;">[no visible focus]</span></div>
+          </div>
+          <div style="font-size:6px;color:var(--accent-red);margin-top:6px;">← outline:none on :focus. Keyboard users can't tell where they are.</div>
+        </div>
+      </div>
+      <div class="comparison-note bad"><strong>× 问题</strong>CSS 里加了 <code>outline: none</code> 去掉浏览器默认焦点框。键盘用户 Tab 切换时看不出当前焦点在哪个元素上，完全无法操作。</div>
+    </div>
+    <div class="comparison-col">
+      <h4 class="good"><span class="dot good"></span>Good — 自定义清晰的焦点样式</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="font-family:sans-serif;padding:14px 12px;">
+          <div style="font-size:9px;font-weight:bold;margin-bottom:12px;">Quick Links</div>
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <div style="padding:9px 0;font-size:8.5px;border-bottom:1px solid #eee;color:#333;">Product Overview</div>
+            <div style="padding:9px 0;font-size:8.5px;border-bottom:1px solid #eee;color:#333;">Technical Specs</div>
+            <div style="padding:9px 0;font-size:8.5px;border-bottom:1px solid #eee;color:#1a1714;font-weight:600;">Buy Now →</div>
+          </div>
+          <div style="margin-top:12px;font-size:7px;background:#f5f5f5;padding:8px;border-radius:3px;">
+            <div style="color:#888;margin-bottom:4px;">Keyboard / assistive nav:</div>
+            <div style="padding:6px 8px;background:white;border-radius:2px;font-size:7px;color:#1a1714;font-weight:500;outline:2px solid #1a1714;outline-offset:2px;">Technical Specs</div>
+          </div>
+          <div style="font-size:6px;color:var(--accent-green);margin-top:6px;">✓ Custom 2px solid outline on :focus-visible. Clear, branded, accessible.</div>
+        </div>
+      </div>
+      <div class="comparison-note good"><strong>✓ 正确</strong>自定义 <code>:focus-visible</code> 样式：2px 深色实线描边 + 2px offset，既符合品牌视觉，又让键盘用户清晰看到当前位置。</div>
+    </div>
+  </div>
+
+  <div class="comparison-row reveal">
+    <div class="comparison-col">
+      <h4 class="bad"><span class="dot bad"></span>Bad — 固定 px 单位，字体放大后溢出</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="font-family:sans-serif;padding:10px 12px;">
+          <div style="font-size:9px;font-weight:bold;margin-bottom:8px;">系统字体放大 150% 后的效果</div>
+          <div style="display:flex;gap:6px;margin-bottom:6px;">
+            <div style="background:#4a90d9;color:white;padding:6px 8px;border-radius:3px;font-size:10.5px;white-space:nowrap;overflow:hidden;max-width:90px;text-overflow:ellipsis;">Buy Now</div>
+            <div style="background:#f0f0f0;color:#333;padding:6px 8px;border-radius:3px;font-size:10.5px;white-space:nowrap;overflow:hidden;max-width:90px;text-overflow:ellipsis;">Learn More</div>
+          </div>
+          <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:3px;padding:6px 8px;font-size:10.5px;overflow:hidden;white-space:nowrap;">⚠ Your cart has items waiting</div>
+          <div style="width:100%;background:#f0f0f0;border-radius:3px;padding:6px;margin-top:6px;overflow:hidden;">
+            <div style="font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#555;">Notification text overflow because height:32px is fix</div>
+          </div>
+          <div style="font-size:6px;color:var(--accent-red);margin-top:6px;">← height: 32px fixed in px. At 150% font size, text clips.</div>
+        </div>
+      </div>
+      <div class="comparison-note bad"><strong>× 问题</strong>容器高度用 <code>height: 32px</code> 固定。系统字体放大到 150% 后，文字超出容器被截断。老年用户或弱视用户常开启大字体。</div>
+    </div>
+    <div class="comparison-col">
+      <h4 class="good"><span class="dot good"></span>Good — rem 相对单位，随系统字体自动缩放</h4>
+      <div class="phone-frame"><div class="phone-notch"></div>
+        <div class="phone-screen" style="font-family:sans-serif;padding:10px 12px;">
+          <div style="font-size:9px;font-weight:bold;margin-bottom:8px;">系统字体放大 150% 后的效果</div>
+          <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+            <div style="background:#1a1714;color:white;padding:7px 12px;border-radius:3px;font-size:10.5px;">Buy Now</div>
+            <div style="background:#f0ebe0;color:#1a1714;padding:7px 12px;border-radius:3px;font-size:10.5px;">Learn More</div>
+          </div>
+          <div style="background:#fef3e1;border:1px solid #d4860a;border-radius:3px;padding:7px 10px;font-size:10.5px;line-height:1.4;">⚠ Your cart has items waiting for checkout</div>
+          <div style="width:100%;background:#f0ebe0;border-radius:3px;padding:7px 10px;margin-top:6px;">
+            <div style="font-size:10.5px;line-height:1.4;color:#555;">Notification text wraps naturally inside min-height container</div>
+          </div>
+          <div style="font-size:6px;color:var(--accent-green);margin-top:6px;">✓ min-height + padding in em. Text wraps, never clips.</div>
+        </div>
+      </div>
+      <div class="comparison-note good"><strong>✓ 正确</strong>用 <code>min-height</code> + <code>padding: 0.5em 0.75em</code>，容器随字体大小自动伸展。字体放大后文字自然换行，不截断。</div>
+    </div>
+  </div>
+
+  <div class="callout info reveal">
+    <span class="callout-icon">ℹ</span>
+    <div><strong style="display:block;margin-bottom:4px">快速无障碍检查工具</strong>Chrome 扩展「axe DevTools」或 Lighthouse 的 Accessibility 评分，可以自动扫描页面并列出违反 WCAG 标准的具体问题。建议每次大版本上线前跑一次，目标分数 ≥ 90。</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 11: CHECKLIST
+══════════════════════════════════ -->
+<div class="section-panel" id="tab-checklist">
+  <div class="chapter-heading reveal">
+    <div class="chapter-num">11 — Launch Checklist</div>
+    <h2>移动端上线 Checklist</h2>
+    <p class="chapter-intro">每次推送新版本前，用这份清单过一遍。点击条目标记为已检查。A = 必须，B = 强烈建议，C = 加分项。</p>
+  </div>
+  <div class="progress-bar-wrap reveal">
+    <span class="progress-label">完成进度</span>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <span class="progress-count" id="progress-count">0 / 26</span>
+  </div>
+
+  <div class="checklist reveal" id="checklist">
+
+    <div class="checklist-group-title">触控 & 布局</div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">所有可点击元素高度 ≥ 44px</div><div class="check-desc">重点：导航链接、Hero CTA、加购按钮、关闭图标、社交图标。Chrome DevTools Computed 面板查高度。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">相邻可点击元素间距 ≥ 8px</div><div class="check-desc">数量加减按钮、轮播导航点、图标组 — 确保用户不会误触相邻目标。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">页面左右边距 ≥ 16px</div><div class="check-desc">在 375px 宽度下，内容区域不得与屏幕边缘距离小于 16px。全出血图片除外。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">无意外横向滚动条</div><div class="check-desc">375px 下横向滚动页面，不应出现水平滚动条。快速排查：<code>* { outline: 1px solid red }</code> 可视化所有元素边界。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">所有图片有 max-width: 100%</div><div class="check-desc">防止图片撑破移动端布局。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">图片声明了 width 和 height 属性</div><div class="check-desc">让浏览器提前预留空间，防止图片加载后内容跳动（CLS 差）。</div></div><span class="check-tag b">B 级</span></div>
+
+    <div class="checklist-group-title">字体 & 可读性</div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">表单 input 字体 ≥ 16px</div><div class="check-desc">邮件订阅、结账表单、搜索框。低于 16px 触发 iOS Safari 自动放大。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">正文行高 ≥ 1.5</div><div class="check-desc">DevTools Computed 查 line-height。段落不得低于 1.5，建议 1.6。日语建议 1.7–1.9。</div></div><span class="check-tag b">B 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">正文对比度 ≥ 4.5:1</div><div class="check-desc">用 webaim.org 检测。重点：促销 banner 彩色文字、产品页描述、图片内嵌文字。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">没有整段的全大写文字</div><div class="check-desc">text-transform: uppercase 只用于短标签（3个词以内），不用于段落或说明文字。</div></div><span class="check-tag b">B 级</span></div>
+
+    <div class="checklist-group-title">交互 & 操作系统</div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">在 375px / 390px / 428px 三个宽度测试</div><div class="check-desc">Chrome DevTools → F12 → 设备模拟 → 手动输入宽度。覆盖主流 iPhone 尺寸。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">Fixed/sticky 元素不遮挡内容</div><div class="check-desc">顶部固定导航、底部购物车栏、Smile.io 积分浮窗 — 确认不挡住正文内容或按钮。</div></div><span class="check-tag b">B 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">iPhone 底部安全区 padding 已处理</div><div class="check-desc">底部固定 UI 需加 <code>padding-bottom: env(safe-area-inset-bottom)</code>，防止 Home 指示条遮挡按钮。</div></div><span class="check-tag b">B 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">Hover 信息有移动端替代方案</div><div class="check-desc">价格明细、尺寸说明、功能说明不能只靠 hover 显示。手机用户必须能通过点击或默认可见获取同等信息。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">视频有 autoplay muted playsinline 三属性</div><div class="check-desc">缺少 playsinline 会在 iPhone 上弹出全屏播放器，破坏页面布局。</div></div><span class="check-tag a">A 级（有视频时）</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">在真机上测试（不只是模拟器）</div><div class="check-desc">DevTools 模拟器不能模拟真实触控、Safari 渲染差异。用 shopify theme dev 本地 URL 在手机上打开测试。</div></div><span class="check-tag b">B 级</span></div>
+
+    <div class="checklist-group-title">表单</div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">所有输入框有 label（不只是 placeholder）</div><div class="check-desc">Label 放在输入框上方，始终可见。Placeholder 只作为格式提示，不能替代 label。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">input type 和 inputmode 正确设置</div><div class="check-desc">email → type="email"，电话 → type="tel"，金额 → inputmode="decimal"。弹出正确的键盘类型。</div></div><span class="check-tag b">B 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">关键输入框有 autocomplete 属性</div><div class="check-desc">姓名、邮箱、地址字段加 autocomplete，减少用户手机输入量，提升结账转化率。</div></div><span class="check-tag b">B 级</span></div>
+
+    <div class="checklist-group-title">多语种（有多语种版本时）</div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">HTML lang 属性随语言正确切换</div><div class="check-desc"><code>&lt;html lang="ja"&gt;</code>、<code>lang="de"&gt;</code>、<code>lang="es"&gt;</code>。影响断词、引号、hyphens 是否生效。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">按钮/容器无固定宽度（德语/西语 +20–35%）</div><div class="check-desc">所有含翻译文字的容器用 min-width / min-height，允许弹性伸缩。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">德语启用 hyphens: auto 断词</div><div class="check-desc">长复合词如 Datenschutzerklärung 会撑破移动端容器。需要 hyphens: auto + lang="de"。</div></div><span class="check-tag a">A 级（德语）</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">日语行高 ≥ 1.7，字号 ≥ 14px</div><div class="check-desc">日文字符密集，行高比英文更大才能可读。字号比英文最低标准更严格。</div></div><span class="check-tag a">A 级（日语）</span></div>
+
+    <div class="checklist-group-title">无障碍 & 性能</div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">所有产品图片有有意义的 alt 文字</div><div class="check-desc">Shopify 后台上传图片时填写 alt。装饰性图片用 alt=""。</div></div><span class="check-tag a">A 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">Lighthouse 无障碍评分 ≥ 90</div><div class="check-desc">F12 → Lighthouse → Accessibility → Analyze。每次大版本上线前跑一次。</div></div><span class="check-tag b">B 级</span></div>
+    <div class="checklist-item"><div class="check-box"></div><div class="check-content"><div class="check-title">横屏模式不破版</div><div class="check-desc">将手机旋转横屏，检查 Hero 高度是否过高，底部固定元素是否占用太多空间。</div></div><span class="check-tag c">C 级</span></div>
+
+  </div>
+
+  <div class="callout info reveal" id="checklist-done" style="display:none">
+    <span class="callout-icon">✅</span>
+    <div><strong style="display:block;margin-bottom:4px">全部完成！</strong>你的移动端页面已经通过所有关键检查项，可以放心推送到线上了。</div>
+  </div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <span class="footer-label">移动端 Layout 最佳实践 · Flowtica Design Reference</span>
+  <span class="footer-sources">参考标准：Apple HIG · Material Design 3 · WCAG 2.1 · Google Core Web Vitals · W3C i18n</span>
+</footer>
+
+<script>
+  // Tab navigation
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + target).classList.add('active');
+      setTimeout(triggerReveal, 50);
+    });
+  });
+
+  // Scroll reveal
+  function triggerReveal() {
+    document.querySelectorAll('.section-panel.active .reveal').forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight + 40) el.classList.add('visible');
+    });
+  }
+  window.addEventListener('scroll', triggerReveal);
+  window.addEventListener('load', triggerReveal);
+  setTimeout(triggerReveal, 100);
+
+  // Checklist
+  const items = document.querySelectorAll('.checklist-item');
+  const fill = document.getElementById('progress-fill');
+  const countEl = document.getElementById('progress-count');
+  const doneEl = document.getElementById('checklist-done');
+  const total = items.length;
+
+  function updateProgress() {
+    const checked = document.querySelectorAll('.checklist-item.checked').length;
+    fill.style.width = (checked / total * 100) + '%';
+    countEl.textContent = checked + ' / ' + total;
+    doneEl.style.display = checked === total ? 'flex' : 'none';
+  }
+
+  items.forEach(item => {
+    item.addEventListener('click', () => {
+      item.classList.toggle('checked');
+      updateProgress();
+    });
+  });
+</script>
+</body>
+</html>
